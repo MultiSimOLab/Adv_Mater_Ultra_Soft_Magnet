@@ -36,14 +36,12 @@ Key features of the framework include:
 - Integration into topology optimization frameworks for intelligent material design.
  
  
-
 ## Benchmarks Gallery
-
 
  <p align="center"> 
 &nbsp; &nbsp; &nbsp; &nbsp;
 <img alt="Dark"
-src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/doc/img/ex.png" width="100%">
+src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/main/doc/img/ex.png" width="100%">
 </p>
 
  
