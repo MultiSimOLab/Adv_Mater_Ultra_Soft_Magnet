@@ -9,16 +9,29 @@
 # Ultra-Soft Magnetoactive Material Simulation (Julia)
 
 <div align="justify" style="margin-left: 40px; margin-right: 40px;">
- 
+ **Overview**
+
 Ultra-soft magnetoactive materials (with stiffness below 10 kPa) are revolutionizing bioengineering and soft robotics, enabling remote actuation within soft, biologically relevant environments.
 Despite major progress over the past decade, accurately modeling their magneto-mechanical coupling remains a challenge—hindering efficient topology and material optimization for these smart structures.
 This project provides a numerical simulation framework in Julia that addresses two key limitations in the field:
 1.	Incomplete understanding of the underlying physical mechanisms driving magneto-mechanical coupling.
 2.	Numerical challenges that limit realistic simulation of fully coupled magneto-mechanical behavior.
 
+**Implementation**
+
+All numerical experiments were conducted in the Julia programming language, utilizing the Gridap framework for the numerical approximation of partial differential equations (PDEs), and the HyperFEM module [https://github.com/MultiSimOLab/HyperFEM] for modeling nonlinear physical phenomena in multifunctional materials.
+Key features of the framework include:
+•	A modular architecture for constitutive modeling, numerical solvers, and data analysis.
+•	Interfaces for coupled-field simulations, enabling the interaction of magnetic and mechanical effects.
+•	Ready-to-use scripts for benchmark problems and topology/material optimization workflows.
 
 </div>
 
+## Applications
+ •	Design of soft robotic actuators with tunable magneto-mechanical responses.
+ •	Modeling of biocompatible magneto-responsive scaffolds.
+ •	Exploration of anisotropic behaviors in ultra-soft magnetorheological elastomers (hMREs).
+ •	Integration into topology optimization frameworks for intelligent material design.
  
  
 
