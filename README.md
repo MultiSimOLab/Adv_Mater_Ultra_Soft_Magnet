@@ -64,7 +64,7 @@ Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonza
  <p align="center"> 
 &nbsp; &nbsp; &nbsp; &nbsp;
 <img alt="Dark"
-src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/doc/img/logo.png" width="100%">
+src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/main/doc/img/logo.png" width="100%">
 </p>
  
 #  Contact
