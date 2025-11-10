@@ -226,10 +226,8 @@ args_mech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => false
 args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5))
 args = (args_mag, args_mech, args_vacmech)
 
-# solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), kargsolve=args)
-
-nsteps=100
-nsubiters=4
+nsteps=20
+nsubiters=2
 x⁺, x⁻ = comp_model.caches
 map((x) -> TrialFESpace!(x.spaces[1], x.dirichlet, 0.0), comp_model.compmodels)
 map((x, y) -> TrialFESpace!(x.fe_space, y.dirichlet, 0.0), comp_model.state⁻, comp_model.compmodels)
