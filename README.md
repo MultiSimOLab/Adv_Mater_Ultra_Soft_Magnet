@@ -50,7 +50,7 @@ src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/main/doc/i
 
 In order to give credit to the contributors, we ask that you please reference the paper:
 
-Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez. Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies. Advanced Materials.
+Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez. **Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies**. Advanced Materials. 2025. DOI: 10.1002/adma.202518489
 
 # Project funded by:
  
