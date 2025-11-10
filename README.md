@@ -9,7 +9,8 @@
 # Ultra-Soft Magnetoactive Material Simulation (Julia)
 
 <div align="justify" style="margin-left: 40px; margin-right: 40px;">
- **Overview**
+
+**Overview**
 
 Ultra-soft magnetoactive materials (with stiffness below 10 kPa) are revolutionizing bioengineering and soft robotics, enabling remote actuation within soft, biologically relevant environments.
 Despite major progress over the past decade, accurately modeling their magneto-mechanical coupling remains a challenge—hindering efficient topology and material optimization for these smart structures.
@@ -19,7 +20,7 @@ This project provides a numerical simulation framework in Julia that addresses t
 
 **Implementation**
 
-All numerical experiments were conducted in the Julia programming language, utilizing the [Gridap](https://gridap.github.io/Gridap.jl/stable/)framework for the numerical approximation of partial differential equations (PDEs), and the [HyperFEM](https://github.com/MultiSimOLab/HyperFEM) package for modeling nonlinear physical phenomena in multifunctional materials.
+All numerical experiments were conducted in the Julia programming language, utilizing the [Gridap](https://gridap.github.io/Gridap.jl/stable/) framework for the numerical approximation of partial differential equations (PDEs), and the [HyperFEM](https://github.com/MultiSimOLab/HyperFEM) package for modeling nonlinear physical phenomena in multifunctional materials.
 Key features of the framework include:
 
 - A modular architecture for constitutive modeling, numerical solvers, and data analysis
@@ -29,10 +30,10 @@ Key features of the framework include:
 </div>
 
 ## Applications
- •	Design of soft robotic actuators with tunable magneto-mechanical responses.
- •	Modeling of biocompatible magneto-responsive scaffolds.
- •	Exploration of anisotropic behaviors in ultra-soft magnetorheological elastomers (hMREs).
- •	Integration into topology optimization frameworks for intelligent material design.
+- Design of soft robotic actuators with tunable magneto-mechanical responses.
+- Modeling of biocompatible magneto-responsive scaffolds.
+- Exploration of anisotropic behaviors in ultra-soft magnetorheological elastomers (hMREs).
+- Integration into topology optimization frameworks for intelligent material design.
  
  
 
@@ -42,7 +43,7 @@ Key features of the framework include:
  <p align="center"> 
 &nbsp; &nbsp; &nbsp; &nbsp;
 <img alt="Dark"
-src="https://github.com/MultiSimOLab/HyperFEM/blob/main/docs/imgs/sims_.png?raw=true" width="110%">
+src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/doc/img/ex.png" width="100%">
 </p>
 
  
