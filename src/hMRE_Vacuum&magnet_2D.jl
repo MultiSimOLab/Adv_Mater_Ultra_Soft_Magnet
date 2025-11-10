@@ -186,10 +186,10 @@ jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (�
                             ∫(∇(vφ)' ⋅ ((DΨmagnet_mag(Λ)[3] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet)) ⋅ ∇(dφ)))dΩmagnet
 
 # Problem 2: residual and jacobian
-res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nh))))dΩsolid -
+res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nhbeam))))dΩsolid -
                         ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(Δ_φ(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nh)) ⊙ (∇(du)')))dΩsolid
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nhbeam)) ⊙ (∇(du)')))dΩsolid
 
 # Problem 3: residual and jacobian
 res_vacmech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψvm∂F ∘ (F ∘ (∇(u)')))))dΩvacuum_mec
@@ -226,7 +226,28 @@ args_mech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => false
 args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5))
 args = (args_mag, args_mech, args_vacmech)
 
-solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), kargsolve=args)
+# solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), kargsolve=args)
+
+nsteps=100
+nsubiters=4
+x⁺, x⁻ = comp_model.caches
+map((x) -> TrialFESpace!(x.spaces[1], x.dirichlet, 0.0), comp_model.compmodels)
+map((x, y) -> TrialFESpace!(x.fe_space, y.dirichlet, 0.0), comp_model.state⁻, comp_model.compmodels)
+∆Λ = 1.0 / nsteps
+for time in 0:nsteps-1
+    println("*******************************************")
+    println("           Staggered Step: $time           ")
+    println("*******************************************")
+    stevol(Λ) = ∆Λ * (Λ + time)
+    map(x -> updateBC!(x.dirichlet, x.dirichlet.caches, [stevol for _ in 1:length(x.dirichlet.caches)]), comp_model.compmodels)
+    αr_[] = αr * ∆Λ * (time + 1)
+    for Λ_inner in 1:nsubiters
+        map((x) -> TrialFESpace!(x.spaces[1], x.dirichlet, 1.0), comp_model.compmodels)
+        map((x,y)->solve!(x; y...),comp_model.compmodels,args)
+        map((x, y) -> TrialFESpace!(x.fe_space, y.dirichlet, 1.0), comp_model.state⁻, comp_model.compmodels)
+        map((x, y) -> x .= y, x⁻, x⁺)
+    end
+end
 
 writevtk(Ωsolid,simdir*"/hMRE2",cellfields=["uh"=>uh_solid⁺]) # MRE deformation
 writevtk(Ωvacuum,simdir*"/Magnetic_vacuum2",cellfields=["uh"=>uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum
