@@ -40,12 +40,11 @@ In order to give credit to the contributors, we ask that you please reference th
 
 Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez. Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies.
 
-along with the required citations for [Gridap](https://github.com/gridap/Gridap.jl).
-
-
 # Project funded by:
  
-- Grants PID2022-141957OA-C22/PID2022-141957OB-C22  funded by MCIN/AEI/ 10.13039/501100011033  and by ''ERDF A way of making Europe''
+- European Research Council (ERC) under the European Union’s Horizon 2020 Research and Innovation Program (grant agreement no. 947723,project: 4D-BIOMAP, and grant agreement no. 101247449, project: MAGMATED), 
+- Catedra UC3M-NAVANTIA-MONODON. 
+- Grant PID2022-141957OA-C22 funded by MICIU/AEI/10.13039/501100011033 and by ”ERDF A way of making Europe”.
 
 
  <p align="center"> 
