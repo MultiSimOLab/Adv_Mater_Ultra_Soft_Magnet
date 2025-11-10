@@ -19,11 +19,12 @@ This project provides a numerical simulation framework in Julia that addresses t
 
 **Implementation**
 
-All numerical experiments were conducted in the Julia programming language, utilizing the Gridap framework for the numerical approximation of partial differential equations (PDEs), and the HyperFEM module [https://github.com/MultiSimOLab/HyperFEM] for modeling nonlinear physical phenomena in multifunctional materials.
+All numerical experiments were conducted in the Julia programming language, utilizing the Gridap [https://gridap.github.io/Gridap.jl/stable/] framework for the numerical approximation of partial differential equations (PDEs), and the HyperFEM module [https://github.com/MultiSimOLab/HyperFEM] for modeling nonlinear physical phenomena in multifunctional materials.
 Key features of the framework include:
-•	A modular architecture for constitutive modeling, numerical solvers, and data analysis.
-•	Interfaces for coupled-field simulations, enabling the interaction of magnetic and mechanical effects.
-•	Ready-to-use scripts for benchmark problems and topology/material optimization workflows.
+
+- A modular architecture for constitutive modeling, numerical solvers, and data analysis
+- Interfaces for coupled-field simulations, enabling the interaction of magnetic and mechanical effects.
+- Ready-to-use scripts for benchmark problems and topology/material optimization workflows.
 
 </div>
 
