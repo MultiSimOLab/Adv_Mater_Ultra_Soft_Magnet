@@ -69,4 +69,4 @@ src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/
  
 #  Contact
 
-Contact the project administrator [Jesús Martínez-Frutos](jesus.martinez@upct.es) for further questions about licenses and terms of use.
+Contact the project administrators [Jesús Martínez-Frutos](jesus.martinez@upct.es), [Daniel Garcia-Gonzalez](danigarc@ing.uc3m.es) for further questions about licenses and terms of use.
