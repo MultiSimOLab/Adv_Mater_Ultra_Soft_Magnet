@@ -51,7 +51,7 @@ along with the required citations for [Gridap](https://github.com/gridap/Gridap.
  <p align="center"> 
 &nbsp; &nbsp; &nbsp; &nbsp;
 <img alt="Dark"
-src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/docs/imgs/logo.png?raw=true" width="70%">
+src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/doc/img/logo.png" width="70%">
 </p>
  
 #  Contact
