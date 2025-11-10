@@ -133,11 +133,11 @@ uh_vacuum⁻ = FEFunction(Uu_vacuum⁻, zero_free_values(Uu_vacuum⁻))
 Uair_int = FESpace(Γair_int, reffeu_vacuum)
 Usolid_int = FESpace(Γsolid_int, reffeu)
 
-uhsolid(Λ) = uh_solid⁻ + (uh_solid⁺ - uh_solid⁻) * Λ
+Δ_uhsolid(Λ) = uh_solid⁻ + (uh_solid⁺ - uh_solid⁻) * Λ
 
 uhsolid_int = interpolate_everywhere(uh_solid⁺, Usolid_int)
 uhair_int = interpolate_everywhere(Interpolable(uhsolid_int), Uair_int)
-uhsolid_int_(Λ) = Interpolable(interpolate_everywhere!(uhsolid(Λ), get_free_dof_values(uhsolid_int), uhsolid_int.dirichlet_values, Usolid_int))
+uhsolid_int_(Λ) = Interpolable(interpolate_everywhere!(Δ_uhsolid(Λ), get_free_dof_values(uhsolid_int), uhsolid_int.dirichlet_values, Usolid_int))
 uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(uhair_int), uhair_int.dirichlet_values, Uair_int)
 
 InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
@@ -160,8 +160,8 @@ F, H, J = get_Kinematics(Kinematics(Mechano, Solid))
 ℋ₀     = get_Kinematics(Kinematics(Magneto, Solid))
 
 # Staggered evolucion of state variable
-uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
-φh(Λ) = φh⁻ + (φh⁺ - φh⁻) * Λ
+Δ_uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
+Δ_φ(Λ) = φh⁻ + (φh⁺ - φh⁻) * Λ
 
 # Magnetization field
 V_N = TestFESpace(Ωsolid, reffeu)
@@ -169,17 +169,17 @@ Nh  = interpolate_everywhere((x)->VectorValue(1.0, 0.0), V_N)
   
 
 # Problem 1: residual and jacobian
-res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh))))dΩsolid -
-                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag 
+res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh))))dΩsolid -
+                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag 
 
-jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh)) ⋅ ∇(dφ)))dΩsolid +
-                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag 
+jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh)) ⋅ ∇(dφ)))dΩsolid +
+                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag 
 
 # Problem 2: residual and jacobian
-res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nh))))dΩsolid -
-                        ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
+res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nh))))dΩsolid -
+                        ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(Δ_φ(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nh)) ⊙ (∇(du)')))dΩsolid
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nh)) ⊙ (∇(du)')))dΩsolid
 
 # Problem 3: residual and jacobian
 res_vacmech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψvm∂F ∘ (F ∘ (∇(u)')))))dΩvacuum_mec
@@ -194,15 +194,13 @@ nls_mag = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-9, rtol=1.e-8, verbose=t
 comp_model_mag = StaticNonlinearModel(res_mag, jac_mag, Uφ⁺, Vφ, Dφ; nls=nls_mag, xh=φh⁺)
 
 # Problem 2
-nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-6, rtol=1.e-2, verbose=true)
+nls_mech = NewtonSolver(LUSolver(); maxiter=500, atol=1.e-6, rtol=1.e-2, verbose=true)
 comp_model_mech = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺)
 
 # Problem 3 
-# α = CellState(1.0, dΩvacuum_mec)
-# linesearch = Injectivity_Preserving_LS(α, Uu_vacuum⁺, Vu_vacuum; maxiter=50, αmin=1e-16, ρ=0.5, c=0.95)
-# nls_vacmech = Newton_RaphsonSolver(LUSolver(); maxiter=10, rtol=2, verbose=true, linesearch=linesearch)
-
-nls_vacmech = Newton_RaphsonSolver(LUSolver(); maxiter=10, rtol=2, verbose=true)
+α = CellState(1.0, dΩvacuum_mec)
+linesearch = Injectivity_Preserving_LS(α, Uu_vacuum⁺, Vu_vacuum; maxiter=50, αmin=1e-16, ρ=0.5, c=0.95)
+nls_vacmech = Newton_RaphsonSolver(LUSolver(); maxiter=10, rtol=2, verbose=true, linesearch=linesearch)
 comp_model_vacmech = StaticNonlinearModel(res_vacmech, jac_vacmech, Uu_vacuum⁺, Vu_vacuum, Du_vacuum; nls=nls_vacmech, xh=uh_vacuum⁺)
 
 # Staggered resolution:  Problem1-> Problem2-> Problem3
