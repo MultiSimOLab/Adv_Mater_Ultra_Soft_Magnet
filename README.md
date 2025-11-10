@@ -1,25 +1,39 @@
- <p align="center"> 
-&nbsp; &nbsp; &nbsp; &nbsp;
-<img alt="Dark"
-src="https://github.com/jmartfrut/HyperFEM/blob/main/docs/imgs/logo.png?raw=true" width="30%">
-</p>
- 
 
-<!-- # HyperFEM :construction: :construction: :construction: **Work in progress** :construction: :construction: :construction: -->
+  
 
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://jmartfrut.github.io/HyperFEM.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://jmartfrut.github.io/HyperFEM.jl/dev/)
 [![Build Status](https://github.com/MultiSimOLab/HyperFEM/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MultiSimOLab/HyperFEM/actions/workflows/ci.yml?branch=main)
 [![Coverage](https://codecov.io/gh/jmartfrut/HyperFEM.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jmartfrut/HyperFEM.jl)
 
-# Multiphysics Simulation of Multifunctional Soft Materials
+# Ultra-Soft Magnetoactive Material Simulation (Julia)
 
 <div align="justify" style="margin-left: 40px; margin-right: 40px;">
 
-**HyperFEM** is a library within the [Gridap](https://github.com/gridap/Gridap.jl) ecosystem designed for the simulation of multiphysics problems involving multifunctional hyperelastic materials. The ultimate goal of HyperFEM is to provide a **high-level, expressive, and rapid prototyping tool** that accelerates the modeling stages of **Thermo–Electro–Magneto–Mechanical** multiphysics problems. To this end, it includes a comprehensive library of **analytically derived constitutive models** formulated through tensor algebra. In addition, HyperFEM provides abstractions for **monolithic and staggered solution schemes**, extending Gridap’s capabilities in the context of **nonlinear solid mechanics**.
+**Overview**
+
+Ultra-soft magnetoactive materials (with stiffness below 10 kPa) are revolutionizing bioengineering and soft robotics, enabling remote actuation within soft, biologically relevant environments.
+Despite major progress over the past decade, accurately modeling their magneto-mechanical coupling remains a challenge—hindering efficient topology and material optimization for these smart structures.
+This project provides a numerical simulation framework in Julia that addresses two key limitations in the field:
+1.	Incomplete understanding of the underlying physical mechanisms driving magneto-mechanical coupling.
+2.	Numerical challenges that limit realistic simulation of fully coupled magneto-mechanical behavior.
+
+**Implementation**
+
+All numerical experiments were conducted in the Julia programming language, utilizing the [Gridap](https://gridap.github.io/Gridap.jl/stable/) framework for the numerical approximation of partial differential equations (PDEs), and the [HyperFEM](https://github.com/MultiSimOLab/HyperFEM) package for modeling nonlinear physical phenomena in multifunctional materials.
+Key features of the framework include:
+
+- A modular architecture for constitutive modeling, numerical solvers, and data analysis
+- Interfaces for coupled-field simulations, enabling the interaction of magnetic and mechanical effects.
+- Ready-to-use scripts for benchmark problems and topology/material optimization workflows.
 
 </div>
 
+## Applications
+- Design of soft robotic actuators with tunable magneto-mechanical responses.
+- Modeling of biocompatible magneto-responsive scaffolds.
+- Exploration of anisotropic behaviors in ultra-soft magnetorheological elastomers (hMREs).
+- Integration into topology optimization frameworks for intelligent material design.
  
  
 
@@ -29,7 +43,7 @@ src="https://github.com/jmartfrut/HyperFEM/blob/main/docs/imgs/logo.png?raw=true
  <p align="center"> 
 &nbsp; &nbsp; &nbsp; &nbsp;
 <img alt="Dark"
-src="https://github.com/MultiSimOLab/HyperFEM/blob/main/docs/imgs/sims_.png?raw=true" width="110%">
+src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/doc/img/ex.png" width="100%">
 </p>
 
  
@@ -40,18 +54,17 @@ In order to give credit to the contributors, we ask that you please reference th
 
 Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez. Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies.
 
-along with the required citations for [Gridap](https://github.com/gridap/Gridap.jl).
-
-
 # Project funded by:
  
-- Grants PID2022-141957OA-C22/PID2022-141957OB-C22  funded by MCIN/AEI/ 10.13039/501100011033  and by ''ERDF A way of making Europe''
+- European Research Council (ERC) under the European Union’s Horizon 2020 Research and Innovation Program (grant agreement no. 947723,project: 4D-BIOMAP, and grant agreement no. 101247449, project: MAGMATED), 
+- Catedra UC3M-NAVANTIA-MONODON. 
+- Grant PID2022-141957OA-C22 funded by MICIU/AEI/10.13039/501100011033 and by ”ERDF A way of making Europe”.
 
 
  <p align="center"> 
 &nbsp; &nbsp; &nbsp; &nbsp;
 <img alt="Dark"
-src="https://github.com/MultiSimOLab/HyperFEM/blob/main/docs/imgs/logo.png?raw=true" width="70%">
+src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/newReadme/doc/img/logo.png" width="100%">
 </p>
  
 #  Contact
