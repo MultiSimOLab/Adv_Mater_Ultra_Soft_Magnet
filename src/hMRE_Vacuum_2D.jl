@@ -5,10 +5,11 @@
 # Solved using an Staggered strategy:
 # -> Problem 1 magnetic problem solid+vacuum
 # -> Problem 2 mechanical problem (solid movement)
-# -> Problem 3 mechanical problem (vacuum movement)
+# -> Problem 3 mechanical problem (fictitious vacuum movement)
 #
+# Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez.
 # Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies
-# Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez
+# Advanced Materials
 #***********************************************************************************************
 
 # Load required Packages
@@ -147,10 +148,6 @@ InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
 #******************************************************
 
 # Derivatives of the energy functions
-DΨ_solid = model_solid()            # Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0
-DΨvacuum_mag = model_vacuum_mag()   # Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0
-DΨvacuum_mech = model_vacuum_mech() # Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF
-
 Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0 = model_solid()          
 Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0 = model_vacuum_mag()   
 Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF = model_vacuum_mech()  

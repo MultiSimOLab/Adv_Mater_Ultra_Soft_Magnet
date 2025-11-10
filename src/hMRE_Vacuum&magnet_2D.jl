@@ -1,6 +1,6 @@
 #***********************************************************************************************
 # Numerical simulation of a fully coupled magneto-mechanical model for Dowsil-based hMREs, 
-# incorporating explicit representations of the surrounding air.
+# incorporating explicit representations of the magnet and the surrounding air.
 #
 # Solved using an Staggered strategy:
 # -> Problem 1 magnetic problem solid+vacuum
@@ -19,7 +19,7 @@ using Gridap.FESpaces
 using Gridap.CellData
 
 # Initialize problem
-pname = "Vacuum_without_magnet"
+pname = "Vacuum_with_magnet"
 meshfile = "Short_magnet.msh"
 simdir = datadir("sims", pname)
 setupfolder(simdir)
@@ -30,6 +30,11 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 #********************
 # Constitutive models
 #********************
+
+# Magnet
+αr = 0.165 / (4e-1 * pi * 1e-6)
+αr_ = Ref(αr)
+model_magnet = Magnetic(μ=4e-1 * pi * 1e-6, αr=αr_, χe=0.05)
 
 # Magnetic model vacuum
 model_vacuum_mag   = IdealMagnetic2D(μ=1.2566e-6, χe=0.0)
@@ -56,14 +61,16 @@ reffeu_vacuum = ReferenceFE(lagrangian, VectorValue{2,Float64}, order_vacuum)
 #**********************
 # Domains
 #**********************
-Ωdomain     = Triangulation(geomodel, tags=["vacuumb", "Beam"])
-Ωvacuum     = Triangulation(geomodel, tags=["vacuumb"])
+Ωmagnet = Interior(geomodel, tags=["Magnet"])
+Ωdomain = Triangulation(geomodel, tags=["Vacuum", "Beam", "Magnet"])
+Ωvacuum     = Triangulation(geomodel, tags=["Vacuum"])
 Ωsolid      = Triangulation(geomodel, tags=["Beam"])
 
 dΩdomain      = Measure(Ωdomain, 2 * order_solid)
 dΩsolid       = Measure(Ωsolid,  2 * order_solid)
 dΩvacuum_mag  = Measure(Ωvacuum, 2 * order_solid)
 dΩvacuum_mec  = Measure(Ωvacuum, 2 * order_vacuum)
+dΩmagnet      = Measure(Ωmagnet, 2 * order_solid)
 
 # Solid <-> Vacuum interface
 Γair_int   = BoundaryTriangulation(Ωvacuum, tags="Interface")
@@ -72,15 +79,16 @@ dΩvacuum_mec  = Measure(Ωvacuum, 2 * order_vacuum)
 nΓsf       = get_normal_vector(Γsf)
 dΓsf       = Measure(Γsf, 4 * order_solid)
 
+
 #************************************
 # Dirichlet boundary conditions
 #************************************
 
 # Problem 1: Dirichlet conditions magnetic field
 evolφ(Λ) = Λ
-dir_φ_tags = ["phibot","phitop"]
-dir_φ_values = [0.2*5200, 0.0]
-dir_φ_timesteps = [evolφ, evolφ]
+dir_φ_tags = ["phi_Dirichlet"]
+dir_φ_values = [0.0]
+dir_φ_timesteps = [evolφ]
 Dφ = DirichletBC(dir_φ_tags, dir_φ_values, dir_φ_timesteps)
 
 # Problem 2: Dirichlet conditions solid
@@ -147,13 +155,10 @@ InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
 #******************************************************
 
 # Derivatives of the energy functions
-DΨ_solid = model_solid()            # Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0
-DΨvacuum_mag = model_vacuum_mag()   # Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0
-DΨvacuum_mech = model_vacuum_mech() # Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF
-
 Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0 = model_solid()          
 Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0 = model_vacuum_mag()   
 Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF = model_vacuum_mech()  
+DΨmagnet_mag(Λ) = model_magnet(Λ) # updates internal αr with Λ
 
 # Kinematic functions
 F, H, J = get_Kinematics(Kinematics(Mechano, Solid))
@@ -163,17 +168,22 @@ F, H, J = get_Kinematics(Kinematics(Mechano, Solid))
 Δ_uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
 Δ_φ(Λ) = φh⁻ + (φh⁺ - φh⁻) * Λ
 
-# Magnetization field
-V_N = TestFESpace(Ωsolid, reffeu)
-Nh  = interpolate_everywhere((x)->VectorValue(1.0, 0.0), V_N)
-  
+# Magnetization field in beam
+V_Nbeam = TestFESpace(Ωsolid, reffeu)
+Nhbeam  = interpolate_everywhere((x)->VectorValue(1.0, 0.0), V_Nbeam)
+# Magnetization field in magnet
+V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
+Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
+ 
 # Problem 1: residual and jacobian
-res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh))))dΩsolid -
-                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag 
+res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nhbeam))))dΩsolid -
+                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag -
+                        ∫((∇(vφ) ⋅ (DΨmagnet_mag(Λ)[2] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet))))dΩmagnet
 
-jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh)) ⋅ ∇(dφ)))dΩsolid +
-                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag 
+jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nhbeam)) ⋅ ∇(dφ)))dΩsolid +
+                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag +
+                            ∫(∇(vφ)' ⋅ ((DΨmagnet_mag(Λ)[3] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet)) ⋅ ∇(dφ)))dΩmagnet
 
 # Problem 2: residual and jacobian
 res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nh))))dΩsolid -
@@ -184,6 +194,7 @@ jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'),
 # Problem 3: residual and jacobian
 res_vacmech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψvm∂F ∘ (F ∘ (∇(u)')))))dΩvacuum_mec
 jac_vacmech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψvm∂FF ∘ (F ∘ (∇(u)'))) ⊙ (∇(du)')))dΩvacuum_mec
+
 
 # ******************************************************
 #             Computational problems
