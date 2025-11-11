@@ -13,7 +13,7 @@
 
 # Load required Packages
 using HyperFEM
-using Gridap, GridapGmsh, GridapSolvers, DrWatson, TimerOutputs
+using Gridap, GridapGmsh, GridapSolvers, DrWatson
 using GridapSolvers.NonlinearSolvers
 using Gridap.FESpaces
 using Gridap.CellData
@@ -141,11 +141,11 @@ uh_vacuum⁻ = FEFunction(Uu_vacuum⁻, zero_free_values(Uu_vacuum⁻))
 Uair_int = FESpace(Γair_int, reffeu_vacuum)
 Usolid_int = FESpace(Γsolid_int, reffeu)
 
-Δ_uhsolid(Λ) = uh_solid⁻ + (uh_solid⁺ - uh_solid⁻) * Λ
+uhsolid(Λ) = uh_solid⁻ + (uh_solid⁺ - uh_solid⁻) * Λ
 
 uhsolid_int = interpolate_everywhere(uh_solid⁺, Usolid_int)
 uhair_int = interpolate_everywhere(Interpolable(uhsolid_int), Uair_int)
-uhsolid_int_(Λ) = Interpolable(interpolate_everywhere!(Δ_uhsolid(Λ), get_free_dof_values(uhsolid_int), uhsolid_int.dirichlet_values, Usolid_int))
+uhsolid_int_(Λ) = Interpolable(interpolate_everywhere!(uhsolid(Λ), get_free_dof_values(uhsolid_int), uhsolid_int.dirichlet_values, Usolid_int))
 uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(uhair_int), uhair_int.dirichlet_values, Uair_int)
 
 InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
@@ -158,15 +158,14 @@ InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
 Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0 = model_solid()          
 Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0 = model_vacuum_mag()   
 Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF = model_vacuum_mech()  
-DΨmagnet_mag(Λ) = model_magnet(Λ) # updates internal αr with Λ
 
 # Kinematic functions
 F, H, J = get_Kinematics(Kinematics(Mechano, Solid))
 ℋ₀     = get_Kinematics(Kinematics(Magneto, Solid))
 
 # Staggered evolucion of state variable
-Δ_uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
-Δ_φ(Λ) = φh⁻ + (φh⁺ - φh⁻) * Λ
+uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
+φh(Λ) = φh⁻ + (φh⁺ - φh⁻) * Λ
 
 # Magnetization field in beam
 V_Nbeam = TestFESpace(Ωsolid, reffeu)
@@ -175,21 +174,24 @@ Nhbeam  = interpolate_everywhere((x)->VectorValue(1.0, 0.0), V_Nbeam)
 V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
 Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
+function αr_update(τ,∆τ)
+αr_[] = αr * ∆τ * (τ + 1)
+end
  
 # Problem 1: residual and jacobian
-res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nhbeam))))dΩsolid -
-                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag -
-                        ∫((∇(vφ) ⋅ (DΨmagnet_mag(Λ)[2] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet))))dΩmagnet
+res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nhbeam))))dΩsolid -
+                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag -
+                        ∫((∇(vφ) ⋅ (model_magnet(Λ)[2] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet))))dΩmagnet
 
-jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(Δ_uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nhbeam)) ⋅ ∇(dφ)))dΩsolid +
-                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag +
-                            ∫(∇(vφ)' ⋅ ((DΨmagnet_mag(Λ)[3] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet)) ⋅ ∇(dφ)))dΩmagnet
+jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nhbeam)) ⋅ ∇(dφ)))dΩsolid +
+                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag +
+                            ∫(∇(vφ)' ⋅ ((model_magnet(Λ)[3] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet)) ⋅ ∇(dφ)))dΩmagnet
 
 # Problem 2: residual and jacobian
-res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nhbeam))))dΩsolid -
-                        ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(Δ_uhvacuum(Λ))'), ℋ₀ ∘ (∇(Δ_φ(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
+res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam))))dΩsolid -
+                        ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(Δ_φ(Λ))), Nhbeam)) ⊙ (∇(du)')))dΩsolid
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam)) ⊙ (∇(du)')))dΩsolid
 
 # Problem 3: residual and jacobian
 res_vacmech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψvm∂F ∘ (F ∘ (∇(u)')))))dΩvacuum_mec
@@ -201,11 +203,11 @@ jac_vacmech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψvm∂FF ∘ (F ∘ (∇(u
 #******************************************************
 
 # Problem 1
-nls_mag = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-9, rtol=1.e-8, verbose=true)
+nls_mag = NewtonSolver(LUSolver(); maxiter=10, atol=1.e-9, rtol=1.e-8, verbose=true)
 comp_model_mag = StaticNonlinearModel(res_mag, jac_mag, Uφ⁺, Vφ, Dφ; nls=nls_mag, xh=φh⁺)
 
 # Problem 2
-nls_mech = NewtonSolver(LUSolver(); maxiter=500, atol=1.e-6, rtol=1.e-2, verbose=true)
+nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-6, rtol=1.e-2, verbose=true)
 comp_model_mech = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺)
 
 # Problem 3 
@@ -221,31 +223,13 @@ comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech
 #               Run solver
 #******************************************************
 
-args_mag = Dict(:stepping => (nsteps=1, maxbisec=5))
-args_mech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => false)
-args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5))
+args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
+args_mech = Dict(:stepping => (nsteps=1, maxbisec=5))
+args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
 args = (args_mag, args_mech, args_vacmech)
 
-nsteps=20
-nsubiters=2
-x⁺, x⁻ = comp_model.caches
-map((x) -> TrialFESpace!(x.spaces[1], x.dirichlet, 0.0), comp_model.compmodels)
-map((x, y) -> TrialFESpace!(x.fe_space, y.dirichlet, 0.0), comp_model.state⁻, comp_model.compmodels)
-∆Λ = 1.0 / nsteps
-for time in 0:nsteps-1
-    println("*******************************************")
-    println("           Staggered Step: $time           ")
-    println("*******************************************")
-    stevol(Λ) = ∆Λ * (Λ + time)
-    map(x -> updateBC!(x.dirichlet, x.dirichlet.caches, [stevol for _ in 1:length(x.dirichlet.caches)]), comp_model.compmodels)
-    αr_[] = αr * ∆Λ * (time + 1)
-    for Λ_inner in 1:nsubiters
-        map((x) -> TrialFESpace!(x.spaces[1], x.dirichlet, 1.0), comp_model.compmodels)
-        map((x,y)->solve!(x; y...),comp_model.compmodels,args)
-        map((x, y) -> TrialFESpace!(x.fe_space, y.dirichlet, 1.0), comp_model.state⁻, comp_model.compmodels)
-        map((x, y) -> x .= y, x⁻, x⁺)
-    end
-end
+solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), presolver=αr_update, kargsolve=args)
+
 
 writevtk(Ωsolid,simdir*"/hMRE2",cellfields=["uh"=>uh_solid⁺]) # MRE deformation
 writevtk(Ωvacuum,simdir*"/Magnetic_vacuum2",cellfields=["uh"=>uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum

@@ -205,9 +205,9 @@ comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech
 #               Run solver
 #******************************************************
 
-args_mag = Dict(:stepping => (nsteps=1, maxbisec=5))
-args_mech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => false)
-args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5))
+args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
+args_mech = Dict(:stepping => (nsteps=1, maxbisec=5))
+args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
 args = (args_mag, args_mech, args_vacmech)
 
 solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), kargsolve=args)
