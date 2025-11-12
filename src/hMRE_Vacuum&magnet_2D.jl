@@ -34,7 +34,7 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 
 # Magnet
 αr_max = 0.165 / (4e-1 * pi * 1e-6)
-model_magnet = Magnetic(μ0=4e-1 * pi * 1e-6, αr=αr_max, χe=0.05)
+model_magnet = Magnetic(μ0=1.2566e-6, αr=αr_max, χe=0.05)
 
 # Magnetic model vacuum
 model_vacuum_mag   = IdealMagnetic2D(μ0=1.2566e-6, χe=0.0)
