@@ -34,19 +34,19 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 # Magnet
 αr = 0.165 / (4e-1 * pi * 1e-6)
 αr_ = Ref(αr)
-model_magnet = Magnetic(μ=4e-1 * pi * 1e-6, αr=αr_, χe=0.05)
+model_magnet = Magnetic(μ0=4e-1 * pi * 1e-6, αr=αr_, χe=0.05)
 
 # Magnetic model vacuum
-model_vacuum_mag   = IdealMagnetic2D(μ=1.2566e-6, χe=0.0)
+model_vacuum_mag   = IdealMagnetic2D(μ0=1.2566e-6, χe=0.0)
 
 # Magneto-Mechanical model for Solid hMREs movement
 hMREs_params = [0.010000000052968838, 12480.64495232286,1.999999975065904, 1.9999999999998976,5195.545287237134, 0.2602717127043121, 1.9999999999999953]
-modelmech = NonlinearMooneyRivlin2D(λ=(hMREs_params[1] + hMREs_params[2]) * 1e2, μ1=hMREs_params[1], μ2=hMREs_params[2], α=hMREs_params[3], β=hMREs_params[4])
-modelhard = HardMagnetic2D(μ=1.2566e-6, αr=10e-3 / 1.2566e-6, χe=0.0, χr=8.0; βmok=0.0, βcoup=0.0)
-model_solid = modelmech + modelhard
+modelmech = NonlinearMooneyRivlin2D(λ=(hMREs_params[1] + hMREs_params[2]) * 1e2, μ1=hMREs_params[1], μ2=hMREs_params[2], α1=hMREs_params[3], α2=hMREs_params[4])
+modelhard = HardMagnetic2D(μ0=1.2566e-6, αr=10e-3 / 1.2566e-6, χe=0.0, χr=8.0)
+model_solid = MagnetoMechModel(magneto=modelhard, mechano=modelmech)
 
 # Mechanical model for Vacuum movement
-model_vacuum_mech_ = NonlinearMooneyRivlin2D_CV(λ=1.0, μ1=1.0, μ2=0.0, α=6.0, β=1.0, γ=6.0)
+model_vacuum_mech_ = NonlinearMooneyRivlin2D_CV(λ=1.0, μ1=1.0, μ2=0.0, α1=6.0, α2=1.0, γ=6.0)
 model_vacuum_mech  = HessianRegularization(mechano=model_vacuum_mech_, δ=1e-6)
 
 #**********************
@@ -112,15 +112,15 @@ Du_vacuum = DirichletBC(dir_u_tags_air, dir_u_values_air, dir_u_timesteps_air)
 
 # Problem 1: FE Spaces and state variables
 Vφ = TestFESpace(Ωdomain, reffeφ, Dφ, conformity=:H1)
-Uφ⁺ = TrialFESpace(Vφ, Dφ, 1.0)
-Uφ⁻ = TrialFESpace(Vφ, Dφ, 1.0)
+Uφ⁺ = TrialFESpace(Vφ, Dφ)
+Uφ⁻ = TrialFESpace(Vφ, Dφ)
 φh⁺ = FEFunction(Uφ⁺, zero_free_values(Uφ⁺))
 φh⁻ = FEFunction(Uφ⁻, zero_free_values(Uφ⁻))
 
 # Problem 2: FE Spaces and state variables
 Vu_solid = TestFESpace(Ωsolid, reffeu, Du_solid, conformity=:H1, dirichlet_masks=[(true, true), (true, false)])
-Uu_solid⁺ = TrialFESpace(Vu_solid, Du_solid, 1.0)
-Uu_solid⁻ = TrialFESpace(Vu_solid, Du_solid, 1.0)
+Uu_solid⁺ = TrialFESpace(Vu_solid, Du_solid)
+Uu_solid⁻ = TrialFESpace(Vu_solid, Du_solid)
 uh_solid⁺ = FEFunction(Uu_solid⁺, zero_free_values(Uu_solid⁺))
 uh_solid⁻ = FEFunction(Uu_solid⁻, zero_free_values(Uu_solid⁻))
 
