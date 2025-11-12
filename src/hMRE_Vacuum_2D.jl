@@ -36,10 +36,11 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 model_vacuum_mag   = IdealMagnetic2D(μ0=μ0, χe=0.0)
 
 # Magneto-Mechanical model for Solid hMREs movement
-hMREs_params = [0.010000000052968838, 12480.64495232286,1.999999975065904, 1.9999999999998976,5195.545287237134, 0.2602717127043121, 1.9999999999999953]
-modelmech = NonlinearMooneyRivlin2D(λ=(hMREs_params[1] + hMREs_params[2]) * 1e2, μ1=hMREs_params[1], μ2=hMREs_params[2], α1=hMREs_params[3], α2=hMREs_params[4])
-modelhard = HardMagnetic2D(μ0=μ0, αr=10e-3 / μ0, χe=0.0, χr=8.0)
-model_solid = MagnetoMechModel(magneto=modelhard, mechano=modelmech)
+params      =  [0.010000000052968838, 12480.64495232286, 1.0, 2.0, 5195.545287237134, 0.2602717127043121,  2.0]
+modelmech   =  NonlinearMooneyRivlin2D(λ=(params[1] + params[2]) * 1e2, μ1=params[1]*1e3, μ2=params[2], α1=params[3], α2=params[4]) + 
+               TransverseIsotropy2D(μ=params[5], α1=params[6], α2=params[7])
+modelhard   =  HardMagnetic2D(μ0=μ0, αr=10e-3/μ0, χe=0.0, χr=8.0)
+model_solid =  MagnetoMechModel(magneto=modelhard, mechano=modelmech)
 
 # Mechanical model for Vacuum movement
 model_vacuum_mech_ = NonlinearMooneyRivlin2D_CV(λ=1.0, μ1=1.0, μ2=0.0, α1=6.0, α2=1.0, γ=6.0)
