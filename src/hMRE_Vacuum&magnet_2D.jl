@@ -21,6 +21,7 @@ using Gridap.CellData
 # Initialize problem
 pname = "Vacuum_with_magnet"
 meshfile = "Short_magnet.msh"
+
 simdir = datadir("sims", pname)
 setupfolder(simdir)
 
@@ -32,8 +33,8 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 #********************
 
 # Magnet
-αr = 0.165 / (4e-1 * pi * 1e-6)
-model_magnet = Magnetic(μ0=4e-1 * pi * 1e-6, αr=αr, χe=0.05)
+αr_max = 0.165 / (4e-1 * pi * 1e-6)
+model_magnet = Magnetic(μ0=4e-1 * pi * 1e-6, αr=αr_max, χe=0.05)
 
 # Magnetic model vacuum
 model_vacuum_mag   = IdealMagnetic2D(μ0=1.2566e-6, χe=0.0)
@@ -125,8 +126,8 @@ uh_solid⁻ = FEFunction(Uu_solid⁻, zero_free_values(Uu_solid⁻))
 
 # Problem 3: FE Spaces and state variables 
 Vu_vacuum = TestFESpace(Ωvacuum, reffeu_vacuum, Du_vacuum, conformity=:H1, dirichlet_masks=[(true, true), (true, false), (true, true)])
-Uu_vacuum⁺ = TrialFESpace(Vu_vacuum, Du_vacuum, 1.0)
-Uu_vacuum⁻ = TrialFESpace(Vu_vacuum, Du_vacuum, 1.0)
+Uu_vacuum⁺ = TrialFESpace(Vu_vacuum, Du_vacuum)
+Uu_vacuum⁻ = TrialFESpace(Vu_vacuum, Du_vacuum)
 uh_vacuum⁺ = FEFunction(Uu_vacuum⁺, zero_free_values(Uu_vacuum⁺))
 uh_vacuum⁻ = FEFunction(Uu_vacuum⁻, zero_free_values(Uu_vacuum⁻))
 
@@ -174,7 +175,7 @@ V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
 Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
 function αr_update(τ,∆τ)
-model_magnet.αr[] = αr * ∆τ * (τ + 1)
+model_magnet.αr[] = αr_max * ∆τ * (τ + 1)
 end
  
 # Problem 1: residual and jacobian

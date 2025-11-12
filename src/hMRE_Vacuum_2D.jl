@@ -27,7 +27,6 @@ setupfolder(simdir)
 
 # Load mesh file
 geomodel = GmshDiscreteModel(datadir("models", meshfile))
-
 #********************
 # Constitutive models
 #********************
