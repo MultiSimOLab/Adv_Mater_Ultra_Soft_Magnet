@@ -33,8 +33,7 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 
 # Magnet
 αr = 0.165 / (4e-1 * pi * 1e-6)
-αr_ = Ref(αr)
-model_magnet = Magnetic(μ0=4e-1 * pi * 1e-6, αr=αr_, χe=0.05)
+model_magnet = Magnetic(μ0=4e-1 * pi * 1e-6, αr=αr, χe=0.05)
 
 # Magnetic model vacuum
 model_vacuum_mag   = IdealMagnetic2D(μ0=1.2566e-6, χe=0.0)
@@ -175,7 +174,7 @@ V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
 Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
 function αr_update(τ,∆τ)
-αr_[] = αr * ∆τ * (τ + 1)
+model_magnet.αr[] = αr * ∆τ * (τ + 1)
 end
  
 # Problem 1: residual and jacobian
@@ -230,6 +229,6 @@ args = (args_mag, args_mech, args_vacmech)
 
 solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), presolver=αr_update, kargsolve=args)
 
-
 writevtk(Ωsolid,simdir*"/hMRE2",cellfields=["uh"=>uh_solid⁺]) # MRE deformation
-writevtk(Ωvacuum,simdir*"/Magnetic_vacuum2",cellfields=["uh"=>uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum
+writevtk(Ωvacuum,simdir*"/vacuum",cellfields=["uh"=>uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum
+writevtk(Ωmagnet,simdir*"/magnet",cellfields=["-∇(φh)" => -∇(φh⁺)]) # Magnet
