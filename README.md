@@ -14,6 +14,7 @@
 <div align="justify" style="margin-left: 40px; margin-right: 40px;">
 
 **Overview**
+
 This repository provides a general-purpose Julia framework for simulating fully coupled magneto-mechanical behavior in soft and hard magnetic materials. The code supports both 2D and 3D simulations and includes an extensive library of constitutive models, enabling users to explore a wide range of material systems and actuation mechanisms.
 While the framework is broadly applicable, several examples focus on ultra-soft magnetoactive materials relevant to bioengineering and soft robotics, where accurate modeling of magneto-mechanical coupling remains a key challenge. These examples illustrate how the toolkit can be used for realistic simulation, analysis, and design of next-generation magnetoactive structures.
 
