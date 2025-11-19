@@ -6,17 +6,16 @@
 [![Build Status](https://github.com/MultiSimOLab/HyperFEM/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MultiSimOLab/HyperFEM/actions/workflows/ci.yml?branch=main)
 [![Coverage](https://codecov.io/gh/jmartfrut/HyperFEM.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/jmartfrut/HyperFEM.jl)
 
-# Ultra-Soft Magnetoactive Material Simulation (Julia)
+# Julia Framework for Coupled Magneto-Mechanical Simulation
+
+
+
 
 <div align="justify" style="margin-left: 40px; margin-right: 40px;">
 
 **Overview**
-
-Ultra-soft magnetoactive materials (with stiffness below 10 kPa) are revolutionizing bioengineering and soft robotics, enabling remote actuation within soft, biologically relevant environments.
-Despite major progress over the past decade, accurately modeling their magneto-mechanical coupling remains a challenge—hindering efficient topology and material optimization for these smart structures.
-This project provides a numerical simulation framework in Julia that addresses two key limitations in the field:
-1.	Incomplete understanding of the underlying physical mechanisms driving magneto-mechanical coupling.
-2.	Numerical challenges that limit realistic simulation of fully coupled magneto-mechanical behavior.
+This repository provides a general-purpose Julia framework for simulating fully coupled magneto-mechanical behavior in soft and hard magnetic materials. The code supports both 2D and 3D simulations and includes an extensive library of constitutive models, enabling users to explore a wide range of material systems and actuation mechanisms.
+While the framework is broadly applicable, several examples focus on ultra-soft magnetoactive materials relevant to bioengineering and soft robotics, where accurate modeling of magneto-mechanical coupling remains a key challenge. These examples illustrate how the toolkit can be used for realistic simulation, analysis, and design of next-generation magnetoactive structures.
 
 **Implementation**
 
