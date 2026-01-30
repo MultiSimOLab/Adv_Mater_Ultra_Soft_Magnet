@@ -78,10 +78,7 @@ dΩmagnet      = Measure(Ωmagnet, 2 * order_solid)
 # Solid <-> Vacuum interface
 Γair_int   = BoundaryTriangulation(Ωvacuum, tags="Interface")
 Γsolid_int = BoundaryTriangulation(Ωsolid, tags="Interface")
-Γsf        = InterfaceTriangulation(Ωsolid, Ωvacuum)
-nΓsf       = get_normal_vector(Γsf)
-dΓsf       = Measure(Γsf, 4 * order_solid)
-
+dΓs = Measure(Γsolid_int, 4 * order_solid)
 
 #************************************
 # Dirichlet boundary conditions
@@ -154,6 +151,21 @@ uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(u
 InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
 
 # ******************************************************
+#    Maxwell stress in vacuum & traction force in interface 
+#******************************************************
+
+V_maxwell = TestFESpace(Ωvacuum, reffeu_vacuum)
+Pmaxw = FEFunction(V_maxwell, zero_free_values(V_maxwell))
+Pmaxw_ = get_free_dof_values(Pmaxw)
+
+V_traction = TestFESpace(Γsolid_int, reffeu)
+U_traction = TrialFESpace(V_traction)
+tmaxw = interpolate_everywhere(Pmaxw, Usolid_int)
+tmaxw_ = get_free_dof_values(tmaxw)
+
+Massoperator = StaticLinearModel((u, v) -> ∫(u ⋅ v)dΓs, U_traction, V_traction, NothingBC())
+ 
+# ******************************************************
 #               Weak Forms
 #******************************************************
 
@@ -191,8 +203,14 @@ jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (�
                             ∫(∇(vφ)' ⋅ ((model_magnet(Λ)[3] ∘ (ℋ₀ ∘ (∇(φ)), Nhmagnet)) ⋅ ∇(dφ)))dΩmagnet
 
 # Problem 2: residual and jacobian
-res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam))))dΩsolid -
-                        ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
+res_mech(Λ) = begin
+    # Assemble Maxwell stress in vacuum
+    assemble_vector!((v) -> ∫(∇(v)' ⊙ (∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))))dΩvacuum_mec, Pmaxw_, V_maxwell)
+    # interpolate in the interface
+    interpolate_everywhere!(Interpolable(Pmaxw), tmaxw_, tmaxw.dirichlet_values, Usolid_int)
+    Massoperator(tmaxw_)
+     (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam))))dΩsolid + ∫((v ⋅ tmaxw))dΓs
+end
 
 jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam)) ⊙ (∇(du)')))dΩsolid
 

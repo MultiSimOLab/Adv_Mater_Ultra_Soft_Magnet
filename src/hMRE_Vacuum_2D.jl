@@ -32,47 +32,45 @@ geomodel = GmshDiscreteModel(datadir("models", meshfile))
 #********************
 
 # Magnetic model vacuum
-μ0=4π*1e-7
-model_vacuum_mag   = IdealMagnetic2D(μ0=μ0, χe=0.0)
+μ0 = 4π * 1e-7
+model_vacuum_mag = IdealMagnetic2D(μ0=μ0, χe=0.0)
 
 # Magneto-Mechanical model for Solid hMREs movement
-params      =  [10.0, 12480.64495232286, 1.0, 2.0, 5195.545287237134, 0.2602717127043121,  2.0]
-modelmech   =  NonlinearMooneyRivlin2D(λ=(params[1] + params[2]) * 1e2, μ1=params[1]*1e3, μ2=params[2], α1=params[3], α2=params[4]) + 
-               TransverseIsotropy2D(μ=params[5], α1=params[6], α2=params[7])
-modelhard   =  HardMagnetic2D(μ0=μ0, αr=10e-3/μ0, χe=0.0, χr=8.0)
-model_solid =  MagnetoMechModel(magneto=modelhard, mechano=modelmech)
+params = [10.0, 12480.64495232286, 1.0, 2.0, 5195.545287237134, 0.2602717127043121, 2.0]
+modelmech = NonlinearMooneyRivlin2D(λ=(params[1] + params[2]) * 1e2, μ1=params[1] * 1e3, μ2=params[2], α1=params[3], α2=params[4]) +
+            TransverseIsotropy2D(μ=params[5], α1=params[6], α2=params[7])
+modelhard = HardMagnetic2D(μ0=μ0, αr=10e-3 / μ0, χe=0.0, χr=8.0)
+model_solid = MagnetoMechModel(magneto=modelhard, mechano=modelmech)
 
 # Mechanical model for Vacuum movement
 model_vacuum_mech_ = NonlinearMooneyRivlin2D_CV(λ=1.0, μ1=1.0, μ2=0.0, α1=6.0, α2=1.0, γ=6.0)
-model_vacuum_mech  = HessianRegularization(mechano=model_vacuum_mech_, δ=1e-6)
+model_vacuum_mech = HessianRegularization(mechano=model_vacuum_mech_, δ=1e-6)
 
 #**********************
 # Finite Elements
 #**********************
-order_solid  = 1       # Linear FEs for solid
+order_solid = 1       # Linear FEs for solid
 order_vacuum = 1       # Linear FEs for vacuum
-reffeφ        = ReferenceFE(lagrangian, Float64, order_solid)
-reffeu        = ReferenceFE(lagrangian, VectorValue{2,Float64}, order_solid)
+reffeφ = ReferenceFE(lagrangian, Float64, order_solid)
+reffeu = ReferenceFE(lagrangian, VectorValue{2,Float64}, order_solid)
 reffeu_vacuum = ReferenceFE(lagrangian, VectorValue{2,Float64}, order_vacuum)
 
 #**********************
 # Domains
 #**********************
-Ωdomain     = Triangulation(geomodel, tags=["vacuumb", "Beam"])
-Ωvacuum     = Triangulation(geomodel, tags=["vacuumb"])
-Ωsolid      = Triangulation(geomodel, tags=["Beam"])
+Ωdomain = Triangulation(geomodel, tags=["vacuumb", "Beam"])
+Ωvacuum = Triangulation(geomodel, tags=["vacuumb"])
+Ωsolid = Triangulation(geomodel, tags=["Beam"])
 
-dΩdomain      = Measure(Ωdomain, 2 * order_solid)
-dΩsolid       = Measure(Ωsolid,  2 * order_solid)
-dΩvacuum_mag  = Measure(Ωvacuum, 2 * order_solid)
-dΩvacuum_mec  = Measure(Ωvacuum, 2 * order_vacuum)
+dΩdomain = Measure(Ωdomain, 2 * order_solid)
+dΩsolid = Measure(Ωsolid, 2 * order_solid)
+dΩvacuum_mag = Measure(Ωvacuum, 2 * order_solid)
+dΩvacuum_mec = Measure(Ωvacuum, 2 * order_vacuum)
 
 # Solid <-> Vacuum interface
-Γair_int   = BoundaryTriangulation(Ωvacuum, tags="Interface")
+Γair_int = BoundaryTriangulation(Ωvacuum, tags="Interface")
 Γsolid_int = BoundaryTriangulation(Ωsolid, tags="Interface")
-Γsf        = InterfaceTriangulation(Ωsolid, Ωvacuum)
-nΓsf       = get_normal_vector(Γsf)
-dΓsf       = Measure(Γsf, 4 * order_solid)
+dΓs = Measure(Γsolid_int, 4 * order_solid)
 
 #************************************
 # Dirichlet boundary conditions
@@ -80,8 +78,8 @@ dΓsf       = Measure(Γsf, 4 * order_solid)
 
 # Problem 1: Dirichlet conditions magnetic field
 evolφ(Λ) = Λ
-dir_φ_tags = ["phibot","phitop"]
-dir_φ_values = [0.2*5200, 0.0]
+dir_φ_tags = ["phibot", "phitop"]
+dir_φ_values = [0.2 * 5200, 0.0]
 dir_φ_timesteps = [evolφ, evolφ]
 Dφ = DirichletBC(dir_φ_tags, dir_φ_values, dir_φ_timesteps)
 
@@ -93,8 +91,8 @@ dir_u_timesteps_solid = [evolu, evolu]
 Du_solid = DirichletBC(dir_u_tags_solid, dir_u_values_solid, dir_u_timesteps_solid)
 
 # Problem 3: Dirichlet conditions vacuum movement
-dir_u_tags_air      = ["Fixed_Air", "Fixed_Air_x", "Interface"]
-dir_u_values_air    = [[0.0, 0.0], [0.0, 0.0], DirichletCoupling]
+dir_u_tags_air = ["Fixed_Air", "Fixed_Air_x", "Interface"]
+dir_u_values_air = [[0.0, 0.0], [0.0, 0.0], DirichletCoupling]
 dir_u_timesteps_air = [evolu, evolu, evolu]
 Du_vacuum = DirichletBC(dir_u_tags_air, dir_u_values_air, dir_u_timesteps_air)
 
@@ -145,17 +143,32 @@ uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(u
 InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
 
 # ******************************************************
+#    Maxwell stress in vacuum & traction force in interface 
+#******************************************************
+
+V_maxwell = TestFESpace(Ωvacuum, reffeu_vacuum)
+Pmaxw = FEFunction(V_maxwell, zero_free_values(V_maxwell))
+Pmaxw_ = get_free_dof_values(Pmaxw)
+
+V_traction = TestFESpace(Γsolid_int, reffeu)
+U_traction = TrialFESpace(V_traction)
+tmaxw = interpolate_everywhere(Pmaxw, Usolid_int)
+tmaxw_ = get_free_dof_values(tmaxw)
+
+Massoperator = StaticLinearModel((u, v) -> ∫(u ⋅ v)dΓs, U_traction, V_traction, NothingBC())
+ 
+# ******************************************************
 #               Weak Forms
 #******************************************************
 
 # Derivatives of the energy functions
-Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0 = model_solid()          
-Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0 = model_vacuum_mag()   
-Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF = model_vacuum_mech()  
+Ψs, ∂Ψs∂F, ∂Ψs∂H0, ∂Ψs∂FF, ∂Ψs∂H0F, ∂Ψs∂H0H0 = model_solid()
+Ψv, ∂Ψv∂F, ∂Ψv∂H0, ∂Ψv∂FF, ∂Ψv∂H0F, ∂Ψv∂H0H0 = model_vacuum_mag()
+Ψvm, ∂Ψvm∂F, ∂Ψvm∂FF = model_vacuum_mech()
 
 # Kinematic functions
 F, H, J = get_Kinematics(Kinematics(Mechano, Solid))
-ℋ₀     = get_Kinematics(Kinematics(Magneto, Solid))
+ℋ₀ = get_Kinematics(Kinematics(Magneto, Solid))
 
 # Staggered evolucion of state variable
 uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
@@ -163,19 +176,25 @@ uhvacuum(Λ) = uh_vacuum⁻ + (uh_vacuum⁺ - uh_vacuum⁻) * Λ
 
 # Magnetization field
 V_N = TestFESpace(Ωsolid, reffeu)
-Nh  = interpolate_everywhere((x)->VectorValue(1.0, 0.0), V_N)
-  
+Nh = interpolate_everywhere((x) -> VectorValue(1.0, 0.0), V_N)
+
 
 # Problem 1: residual and jacobian
 res_mag(Λ) = (φ, vφ) -> -1.0 * ∫((∇(vφ) ⋅ (∂Ψs∂H0 ∘ (F ∘ (∇(uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh))))dΩsolid -
-                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag 
+                        ∫((∇(vφ) ⋅ (∂Ψv∂H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ))))))dΩvacuum_mag
 
 jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (∇(uhsolid(Λ))'), ℋ₀ ∘ (∇(φ)), Nh)) ⋅ ∇(dφ)))dΩsolid +
-                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag 
+                            ∫(∇(vφ)' ⋅ ((∂Ψv∂H0H0 ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φ)))) ⋅ ∇(dφ)))dΩvacuum_mag
 
 # Problem 2: residual and jacobian
-res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nh))))dΩsolid -
-                        ∫((v.⁺ ⋅ ((∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))).⁻ ⋅ nΓsf.⁺)))dΓsf
+res_mech(Λ) = begin
+    # Assemble Maxwell stress in vacuum
+    assemble_vector!((v) -> ∫(∇(v)' ⊙ (∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))))dΩvacuum_mec, Pmaxw_, V_maxwell)
+    # interpolate in the interface
+    interpolate_everywhere!(Interpolable(Pmaxw), tmaxw_, tmaxw.dirichlet_values, Usolid_int)
+    Massoperator(tmaxw_)
+     (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nh))))dΩsolid + ∫((v ⋅ tmaxw))dΓs
+end
 
 jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nh)) ⊙ (∇(du)')))dΩsolid
 
@@ -196,7 +215,7 @@ nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-6, rtol=1.e-2, verbose=
 comp_model_mech = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺)
 
 # Problem 3 
-nls_vacmech = NewtonSolver(LUSolver(); maxiter=10,  rtol=2, verbose=true)
+nls_vacmech = NewtonSolver(LUSolver(); maxiter=10, rtol=2, verbose=true)
 comp_model_vacmech = StaticNonlinearModel(res_vacmech, jac_vacmech, Uu_vacuum⁺, Vu_vacuum, Du_vacuum; nls=nls_vacmech, xh=uh_vacuum⁺)
 
 # Staggered resolution:  Problem1-> Problem2-> Problem3
@@ -206,12 +225,12 @@ comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech
 #               Run solver
 #******************************************************
 
-args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
+args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => true)
 args_mech = Dict(:stepping => (nsteps=1, maxbisec=5))
-args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
+args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => true)
 args = (args_mag, args_mech, args_vacmech)
 
 solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), kargsolve=args)
 
-writevtk(Ωsolid,simdir*"/hMRE2",cellfields=["uh"=>uh_solid⁺]) # MRE deformation
-writevtk(Ωvacuum,simdir*"/Magnetic_vacuum2",cellfields=["uh"=>uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum
+writevtk(Ωsolid, simdir * "/hMRE2", cellfields=["uh" => uh_solid⁺]) # MRE deformation
+writevtk(Ωvacuum, simdir * "/Magnetic_vacuum2", cellfields=["uh" => uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum
