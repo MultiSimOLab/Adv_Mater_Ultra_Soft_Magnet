@@ -50,7 +50,7 @@ src="https://github.com/MultiSimOLab/Adv_Mater_Ultra_Soft_Magnet/blob/main/doc/i
 
 In order to give credit to the contributors, we ask that you please reference the paper:
 
-C. Perez‐Garcia, R. Ortigosa, J. Martínez‐Frutos, and D. Garcia‐Gonzalez, **Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies.** Adv. Mater. (2025): e18489. https://https://doi.org/10.1002/adma.202518489
+C. Perez‐Garcia, R. Ortigosa, J. Martínez‐Frutos, and D. Garcia‐Gonzalez, **Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies.** Adv. Mater. (2025): e18489. https://advanced.onlinelibrary.wiley.com/doi/10.1002/adma.202518489
  
 
 # Project funded by:
