@@ -93,13 +93,11 @@ V_N = TestFESpace(Ωsolid, reffeu)
 Nh = interpolate_everywhere((x) -> VectorValue(1.0, 0.0), V_N)
 Bah = interpolate_everywhere(VectorValue([0.0, -Banorm]), V_N)
 ∂Ψmag∂F(Fn, N, Ba) = (-αr / μ0) * (Ba ⊗ ((invU(Fn)) * N))
-∂2Ψmag∂FF(Fn, N, Ba) = TensorValue(zeros(4, 4))
 
 res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), Nh))))dΩsolid +
                         Λ * ∫((∂Ψmag∂F ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(v)'))dΩsolid
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⊙ (∇(du)')))dΩsolid +
-                            Λ * ∫(∇(v)' ⊙ ((∂2Ψmag∂FF ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(du)')))dΩsolid
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⊙ (∇(du)')))dΩsolid 
 
 # ******************************************************
 #             Computational problems
