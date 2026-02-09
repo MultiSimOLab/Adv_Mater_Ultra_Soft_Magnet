@@ -1,8 +1,9 @@
 #***********************************************************************************************
-#Numerical simulation of a fully coupled magneto-mechanical model for Dowsil-based hMREs under a 
+# Numerical simulation of a fully coupled magneto-mechanical model for Dowsil-based hMREs under a 
 # simplified magnetic-field assumption
 # Carlos Perez-Garcia, Rogelio Ortigosa, Jesus Martinez-Frutos Daniel Garcia-Gonzalez.
-# Topology and material optimization in ultra-soft magnetoactive structures: making advantage of residual anisotropies
+# Topology and material optimization in ultra-soft magnetoactive structures: making advantage of 
+# residual anisotropies
 # Advanced Materials
 #***********************************************************************************************
 
@@ -94,12 +95,11 @@ Bah = interpolate_everywhere(VectorValue([0.0, -Banorm]), V_N)
 ∂Ψmag∂F(Fn, N, Ba) = (-αr / μ0) * (Ba ⊗ ((invU(Fn)) * N))
 ∂2Ψmag∂FF(Fn, N, Ba) = TensorValue(zeros(4, 4))
 
-g₂(Λ) = Λ
 res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), Nh))))dΩsolid +
-                        g₂(Λ) * ∫((∂Ψmag∂F ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(v)'))dΩsolid
+                        Λ * ∫((∂Ψmag∂F ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(v)'))dΩsolid
 
 jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⊙ (∇(du)')))dΩsolid +
-                            g₂(Λ) * ∫(∇(v)' ⊙ ((∂2Ψmag∂FF ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(du)')))dΩsolid
+                            Λ * ∫(∇(v)' ⊙ ((∂2Ψmag∂FF ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(du)')))dΩsolid
 
 # ******************************************************
 #             Computational problems
@@ -108,7 +108,7 @@ jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'),
 nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-8, rtol=1.e-2, verbose=true)
 comp_model = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺, xh⁻=uh_solid⁻)
 
-# ******************************************************
+#******************************************************
 #               Run solver
 #******************************************************
 
