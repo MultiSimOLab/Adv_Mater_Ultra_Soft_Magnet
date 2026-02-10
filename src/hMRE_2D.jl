@@ -11,6 +11,7 @@
 using HyperFEM
 using Gridap, GridapGmsh, GridapSolvers, DrWatson
 using GridapSolvers.NonlinearSolvers
+using Gridap.FESpaces
 
 
 function invU(F; ε=1e-12)
