@@ -190,7 +190,7 @@ V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
 Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
 function αr_update(τ,∆τ)
-model_magnet.αr[] = αr_max * ∆τ * (τ + 1)
+model_magnet.αr = αr_max * ∆τ * (τ + 1)   # HyperFEM dereferences αr itself (PR #158)
 end
  
 # Problem 1: residual and jacobian
