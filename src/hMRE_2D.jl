@@ -63,15 +63,15 @@ dΩsolid = Measure(Ωsolid, 2 * order_solid)
 # Dirichlet boundary conditions
 #************************************
 
-dir_u_tags_solid = ["Fixed_Solid", "Fixed_Solid_x"]
-dir_u_values_solid = [[0.0, 0.0], [0.0, 0.0]]
-Du_solid = DirichletBC(dir_u_tags_solid, dir_u_values_solid)
+Du_solid = BoundaryConditions(
+  BoundaryCondition("Fixed_Solid", [0.0, 0.0]),
+  BoundaryCondition("Fixed_Solid_x", [0.0, 0.0]; mask=(true, false)))
 
 #******************************************
 # Finite Element Spaces and state variables
 #******************************************
 
-Vu_solid = TestFESpace(Ωsolid, reffeu, Du_solid, conformity=:H1, dirichlet_masks=[(true, true), (true, false)])
+Vu_solid = TestFESpace(Ωsolid, reffeu, Du_solid, conformity=:H1)
 Uu_solid⁺ = TrialFESpace(Vu_solid, Du_solid)
 Uu_solid⁻ = TrialFESpace(Vu_solid, Du_solid)
 uh_solid⁺ = FEFunction(Uu_solid⁺, zero_free_values(Uu_solid⁺))
