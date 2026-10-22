@@ -86,23 +86,15 @@ dΓs = Measure(Γsolid_int, 4 * order_solid)
 
 # Problem 1: Dirichlet conditions magnetic field
 evolφ(Λ) = Λ
-dir_φ_tags = ["phi_Dirichlet"]
-dir_φ_values = [0.0]
-dir_φ_timesteps = [evolφ]
-Dφ = DirichletBC(dir_φ_tags, dir_φ_values, dir_φ_timesteps)
+Dφ = BoundaryConditions(BoundaryCondition("phi_Dirichlet", 0.0, evolφ))
 
 # Problem 2: Dirichlet conditions solid
 evolu(Λ) = 1.0
-dir_u_tags_solid = ["Fixed_Solid", "Fixed_Solid_x"]
-dir_u_values_solid = [[0.0, 0.0], [0.0, 0.0]]
-dir_u_timesteps_solid = [evolu, evolu]
-Du_solid = DirichletBC(dir_u_tags_solid, dir_u_values_solid, dir_u_timesteps_solid)
+Du_solid = BoundaryConditions(
+  BoundaryCondition("Fixed_Solid", [0.0, 0.0], evolu),
+  BoundaryCondition("Fixed_Solid_x", [0.0, 0.0], evolu; mask=(true, false)))
 
-# Problem 3: Dirichlet conditions vacuum movement
-dir_u_tags_air      = ["Fixed_Air", "Fixed_Air_x", "Interface"]
-dir_u_values_air    = [[0.0, 0.0], [0.0, 0.0], DirichletCoupling]
-dir_u_timesteps_air = [evolu, evolu, evolu]
-Du_vacuum = DirichletBC(dir_u_tags_air, dir_u_values_air, dir_u_timesteps_air)
+# Problem 3: Dirichlet conditions vacuum movement: below, with the solid–vacuum coupling
 
 #******************************************
 # Finite Element Spaces and state variables
@@ -118,18 +110,11 @@ Uφ⁻ = TrialFESpace(Vφ, Dφ)
 φh⁻ = FEFunction(Uφ⁻, zero_free_values(Uφ⁻))
 
 # Problem 2: FE Spaces and state variables
-Vu_solid = TestFESpace(Ωsolid, reffeu, Du_solid, conformity=:H1, dirichlet_masks=[(true, true), (true, false)])
+Vu_solid = TestFESpace(Ωsolid, reffeu, Du_solid, conformity=:H1)
 Uu_solid⁺ = TrialFESpace(Vu_solid, Du_solid)
 Uu_solid⁻ = TrialFESpace(Vu_solid, Du_solid)
 uh_solid⁺ = FEFunction(Uu_solid⁺, zero_free_values(Uu_solid⁺))
 uh_solid⁻ = FEFunction(Uu_solid⁻, zero_free_values(Uu_solid⁻))
-
-# Problem 3: FE Spaces and state variables 
-Vu_vacuum = TestFESpace(Ωvacuum, reffeu_vacuum, Du_vacuum, conformity=:H1, dirichlet_masks=[(true, true), (true, false), (true, true)])
-Uu_vacuum⁺ = TrialFESpace(Vu_vacuum, Du_vacuum)
-Uu_vacuum⁻ = TrialFESpace(Vu_vacuum, Du_vacuum)
-uh_vacuum⁺ = FEFunction(Uu_vacuum⁺, zero_free_values(Uu_vacuum⁺))
-uh_vacuum⁻ = FEFunction(Uu_vacuum⁻, zero_free_values(Uu_vacuum⁻))
 
 # ******************************************************
 # Solid–vacuum coupling
@@ -148,7 +133,18 @@ uhair_int = interpolate_everywhere(Interpolable(uhsolid_int), Uair_int)
 uhsolid_int_(Λ) = Interpolable(interpolate_everywhere!(uhsolid(Λ), get_free_dof_values(uhsolid_int), uhsolid_int.dirichlet_values, Usolid_int))
 uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(uhair_int), uhair_int.dirichlet_values, Uair_int)
 
-InterpolableBC!(Uu_vacuum⁺, Du_vacuum, "Interface", uhair_int_)
+# Problem 3: Dirichlet conditions vacuum movement (the interface follows the solid: uhair_int_(Λ))
+Du_vacuum = BoundaryConditions(
+  BoundaryCondition("Fixed_Air", [0.0, 0.0], evolu),
+  BoundaryCondition("Fixed_Air_x", [0.0, 0.0], evolu; mask=(true, false)),
+  BoundaryCondition("Interface", Parametric(uhair_int_)))
+
+# Problem 3: FE Spaces and state variables 
+Vu_vacuum = TestFESpace(Ωvacuum, reffeu_vacuum, Du_vacuum, conformity=:H1)
+Uu_vacuum⁺ = TrialFESpace(Vu_vacuum, Du_vacuum)
+Uu_vacuum⁻ = TrialFESpace(Vu_vacuum, Du_vacuum)
+uh_vacuum⁺ = FEFunction(Uu_vacuum⁺, zero_free_values(Uu_vacuum⁺))
+uh_vacuum⁻ = FEFunction(Uu_vacuum⁻, zero_free_values(Uu_vacuum⁻))
 
 # ******************************************************
 #    Maxwell stress in vacuum & traction force in interface 
@@ -190,7 +186,7 @@ V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
 Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
 function αr_update(τ,∆τ)
-model_magnet.αr[] = αr_max * ∆τ * (τ + 1)
+model_magnet.αr = αr_max * ∆τ * (τ + 1)   # HyperFEM dereferences αr itself (PR #158)
 end
  
 # Problem 1: residual and jacobian
