@@ -137,7 +137,7 @@ uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(u
 Du_vacuum = BoundaryConditions(
   BoundaryCondition("Fixed_Air", [0.0, 0.0], evolu),
   BoundaryCondition("Fixed_Air_x", [0.0, 0.0], evolu; mask=(true, false)),
-  BoundaryCondition("Interface", Parametric(uhair_int_)))
+  BoundaryCondition("Interface", Coupling(uhair_int_)))
 
 # Problem 3: FE Spaces and state variables 
 Vu_vacuum = TestFESpace(Ωvacuum, reffeu_vacuum, Du_vacuum, conformity=:H1)
