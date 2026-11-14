@@ -10,7 +10,6 @@
 # Load required Packages
 using HyperFEM
 using Gridap, GridapGmsh, GridapSolvers, DrWatson
-using GridapSolvers.NonlinearSolvers
 using Gridap.FESpaces
 
 
@@ -102,7 +101,7 @@ jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'),
 #             Computational problems
 #******************************************************
 
-nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-8, rtol=1.e-2, verbose=true)
+nls_mech = NewtonRaphson(LUSolver(); maxiter=20, atol=1.e-8, rtol=1.e-2, verbose=true)
 comp_model = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺, xh⁻=uh_solid⁻)
 
 #******************************************************
