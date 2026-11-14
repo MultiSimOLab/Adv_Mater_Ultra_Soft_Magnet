@@ -9,7 +9,7 @@
 
 # Load required Packages
 using HyperFEM
-using Gridap, GridapGmsh, GridapSolvers, DrWatson
+using Gridap, GridapGmsh, DrWatson
 using Gridap.FESpaces
 
 
@@ -108,6 +108,6 @@ comp_model = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_
 #               Run solver
 #******************************************************
 
-solve!(comp_model; stepping=(nsteps=20, maxbisec=1))
+solve!(comp_model; stepping=LoadStepping(nsteps=20, maxbisec=1))
 
 writevtk(Ωsolid, simdir * "/hMRE2", cellfields=["uh" => uh_solid⁺]) # MRE deformation

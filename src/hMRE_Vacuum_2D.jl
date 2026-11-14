@@ -14,7 +14,7 @@
 
 # Load required Packages
 using HyperFEM
-using Gridap, GridapGmsh, GridapSolvers, DrWatson
+using Gridap, GridapGmsh, DrWatson
 using Gridap.FESpaces
 using Gridap.CellData
 
@@ -215,12 +215,13 @@ comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech
 #               Run solver
 #******************************************************
 
-args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => true)
-args_mech = Dict(:stepping => (nsteps=1, maxbisec=5))
-args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet => true)
+# keywords of the solve! of each model inside a pass (one load increment, up to 5 bisections)
+args_mag = (stepping=LoadStepping(nsteps=1, maxbisec=5), ProjectDirichlet=true)
+args_mech = (stepping=LoadStepping(nsteps=1, maxbisec=5),)
+args_vacmech = (stepping=LoadStepping(nsteps=1, maxbisec=5), ProjectDirichlet=true)
 args = (args_mag, args_mech, args_vacmech)
 
-solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), kargsolve=args)
+solve!(comp_model; stepping=StaggeredStepping(nsteps=20, max_substeps=2, maxbisec=1), kargsolve=args)
 
 writevtk(Ωsolid, simdir * "/hMRE2", cellfields=["uh" => uh_solid⁺]) # MRE deformation
 writevtk(Ωvacuum, simdir * "/Magnetic_vacuum2", cellfields=["uh" => uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum

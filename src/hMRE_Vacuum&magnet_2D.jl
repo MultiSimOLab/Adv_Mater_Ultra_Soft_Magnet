@@ -13,7 +13,7 @@
 
 # Load required Packages
 using HyperFEM
-using Gridap, GridapGmsh, GridapSolvers, DrWatson
+using Gridap, GridapGmsh, DrWatson
 using Gridap.FESpaces
 using Gridap.CellData
 
@@ -224,10 +224,12 @@ nls_mech = NewtonRaphson(LUSolver(); maxiter=20, atol=1.e-6, rtol=1.e-2, verbose
 comp_model_mech = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺)
 
 # Problem 3 
-α = CellState(1.0, dΩvacuum_mec)
-linesearch = Injectivity_Preserving_LS(α, Uu_vacuum⁺, Vu_vacuum; maxiter=50, αmin=1e-16, ρ=0.5, c=0.95)
-nls_vacmech = Newton_RaphsonSolver(LUSolver(); maxiter=10, rtol=2, verbose=true, linesearch=linesearch)
-comp_model_vacmech = StaticNonlinearModel(res_vacmech, jac_vacmech, Uu_vacuum⁺, Vu_vacuum, Du_vacuum; nls=nls_vacmech, xh=uh_vacuum⁺)
+# the vacuum mesh must not invert: the step starts from 0.95 × the exact injectivity limit at the quadrature
+# points of dΩvacuum_mec (`injectivity` in the driver) and is halved until |R·dx| drops below 0.95 |R₀·dx|
+linesearch = InjectivityLS(; β=0.95, ρ=0.5, c=0.95, maxiter=50, αmin=1e-16)
+nls_vacmech = NewtonRaphson(LUSolver(); maxiter=10, rtol=2, verbose=true, linesearch=linesearch)
+comp_model_vacmech = StaticNonlinearModel(res_vacmech, jac_vacmech, Uu_vacuum⁺, Vu_vacuum, Du_vacuum; nls=nls_vacmech, xh=uh_vacuum⁺,
+                                          injectivity=dΩvacuum_mec)
 
 # Staggered resolution:  Problem1-> Problem2-> Problem3
 comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech), (φh⁺, uh_solid⁺, uh_vacuum⁺), (φh⁻, uh_solid⁻, uh_vacuum⁻))
@@ -236,9 +238,10 @@ comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech
 #               Run solver
 #******************************************************
 
-args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
-args_mech = Dict(:stepping => (nsteps=1, maxbisec=5))
-args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
+# keywords of the solve! of each model inside a pass (one load increment, up to 5 bisections)
+args_mag = (stepping=LoadStepping(nsteps=1, maxbisec=5), ProjectDirichlet=true)
+args_mech = (stepping=LoadStepping(nsteps=1, maxbisec=5),)
+args_vacmech = (stepping=LoadStepping(nsteps=1, maxbisec=5), ProjectDirichlet=true)
 args = (args_mag, args_mech, args_vacmech)
 
 solve!(comp_model; stepping=StaggeredStepping(nsteps=20, max_substeps=2, maxbisec=1), presolver=αr_update, kargsolve=args)
