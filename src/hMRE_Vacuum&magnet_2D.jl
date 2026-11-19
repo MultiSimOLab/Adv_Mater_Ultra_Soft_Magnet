@@ -13,8 +13,7 @@
 
 # Load required Packages
 using HyperFEM
-using Gridap, GridapGmsh, GridapSolvers, DrWatson
-using GridapSolvers.NonlinearSolvers
+using Gridap, GridapGmsh, DrWatson
 using Gridap.FESpaces
 using Gridap.CellData
 
@@ -76,7 +75,6 @@ dΩvacuum_mec  = Measure(Ωvacuum, 2 * order_vacuum)
 dΩmagnet      = Measure(Ωmagnet, 2 * order_solid)
 
 # Solid <-> Vacuum interface
-Γair_int   = BoundaryTriangulation(Ωvacuum, tags="Interface")
 Γsolid_int = BoundaryTriangulation(Ωsolid, tags="Interface")
 dΓs = Measure(Γsolid_int, 4 * order_solid)
 
@@ -118,26 +116,21 @@ uh_solid⁻ = FEFunction(Uu_solid⁻, zero_free_values(Uu_solid⁻))
 
 # ******************************************************
 # Solid–vacuum coupling
-# Function to interpolate staggered solid displacement
-# increments to the vacuum region
+# State of the solid between two staggered stages, prescribed on the
+# interface of the vacuum. HyperFEM locates the nodes of the interface
+# in the mesh of the solid once (they coincide: a copy of dof values)
 #******************************************************
 
-# Interface solid-vacuum coupling
-Uair_int = FESpace(Γair_int, reffeu_vacuum)
+# Interface of the solid (space of the Maxwell traction)
 Usolid_int = FESpace(Γsolid_int, reffeu)
 
-uhsolid(Λ) = uh_solid⁻ + (uh_solid⁺ - uh_solid⁻) * Λ
+uhsolid = StageBlend(uh_solid⁻, uh_solid⁺)      # uhsolid(Λ) = uh_solid⁻ + (uh_solid⁺ - uh_solid⁻) * Λ
 
-uhsolid_int = interpolate_everywhere(uh_solid⁺, Usolid_int)
-uhair_int = interpolate_everywhere(Interpolable(uhsolid_int), Uair_int)
-uhsolid_int_(Λ) = Interpolable(interpolate_everywhere!(uhsolid(Λ), get_free_dof_values(uhsolid_int), uhsolid_int.dirichlet_values, Usolid_int))
-uhair_int_(Λ) = interpolate_everywhere!(uhsolid_int_(Λ), get_free_dof_values(uhair_int), uhair_int.dirichlet_values, Uair_int)
-
-# Problem 3: Dirichlet conditions vacuum movement (the interface follows the solid: uhair_int_(Λ))
+# Problem 3: Dirichlet conditions vacuum movement (the interface follows the solid: uhsolid(Λ))
 Du_vacuum = BoundaryConditions(
   BoundaryCondition("Fixed_Air", [0.0, 0.0], evolu),
   BoundaryCondition("Fixed_Air_x", [0.0, 0.0], evolu; mask=(true, false)),
-  BoundaryCondition("Interface", Coupling(uhair_int_)))
+  BoundaryCondition("Interface", Coupling(uhsolid)))
 
 # Problem 3: FE Spaces and state variables 
 Vu_vacuum = TestFESpace(Ωvacuum, reffeu_vacuum, Du_vacuum, conformity=:H1)
@@ -159,6 +152,7 @@ U_traction = TrialFESpace(V_traction)
 tmaxw = interpolate_everywhere(Pmaxw, Usolid_int)
 tmaxw_ = get_free_dof_values(tmaxw)
 
+T_maxwell = Transfer(V_maxwell, Usolid_int)      # vacuum → interface of the solid, built once
 Massoperator = StaticLinearModel((u, v) -> ∫(u ⋅ v)dΓs, U_traction, V_traction, NothingBC())
  
 # ******************************************************
@@ -185,8 +179,10 @@ Nhbeam  = interpolate_everywhere((x)->VectorValue(1.0, 0.0), V_Nbeam)
 V_Nmagnet = TestFESpace(Ωmagnet, reffeu)
 Nhmagnet  = interpolate_everywhere((x)->VectorValue(0.0, 1.0), V_Nmagnet)
 
-function αr_update(τ,∆τ)
-model_magnet.αr = αr_max * ∆τ * (τ + 1)   # HyperFEM dereferences αr itself (PR #158)
+# Remanent magnetisation of the magnet, ramped by the staggered loop: called before every step with the
+# stage τ⁻ ∈ [0, 1] of the last accepted step and the increment ∆τ; equal steps, step n = τ⁻/∆τ
+function αr_update(τ⁻, ∆τ)
+  model_magnet.αr = αr_max * ∆τ * (round(τ⁻ / ∆τ) + 1)   # HyperFEM dereferences αr itself (PR #158)
 end
  
 # Problem 1: residual and jacobian
@@ -202,17 +198,17 @@ jac_mag(Λ) = (φ, dφ, vφ) -> ∫(∇(vφ)' ⋅ ((∂Ψs∂H0H0 ∘ (F ∘ (�
 res_mech(Λ) = begin
     # Assemble Maxwell stress in vacuum
     assemble_vector!((v) -> ∫(∇(v)' ⊙ (∂Ψv∂F ∘ (F ∘ (∇(uhvacuum(Λ))'), ℋ₀ ∘ (∇(φh(Λ))))))dΩvacuum_mec, Pmaxw_, V_maxwell)
-    # interpolate in the interface
-    interpolate_everywhere!(Interpolable(Pmaxw), tmaxw_, tmaxw.dirichlet_values, Usolid_int)
+    # nodal values on the interface of the solid
+    transfer!(tmaxw_, T_maxwell, Pmaxw)
     Massoperator(tmaxw_)
      (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam))))dΩsolid + ∫((v ⋅ tmaxw))dΓs
 end
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam)) ⊙ (∇(du)')))dΩsolid
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), ℋ₀ ∘ (∇(φh(Λ))), Nhbeam)) ⋅² (∇(du)')))dΩsolid
 
 # Problem 3: residual and jacobian
 res_vacmech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψvm∂F ∘ (F ∘ (∇(u)')))))dΩvacuum_mec
-jac_vacmech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψvm∂FF ∘ (F ∘ (∇(u)'))) ⊙ (∇(du)')))dΩvacuum_mec
+jac_vacmech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψvm∂FF ∘ (F ∘ (∇(u)'))) ⋅² (∇(du)')))dΩvacuum_mec
 
 
 # ******************************************************
@@ -220,18 +216,20 @@ jac_vacmech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψvm∂FF ∘ (F ∘ (∇(u
 #******************************************************
 
 # Problem 1
-nls_mag = NewtonSolver(LUSolver(); maxiter=10, atol=1.e-9, rtol=1.e-8, verbose=true)
+nls_mag = NewtonRaphson(LUSolver(); maxiter=10, atol=1.e-9, rtol=1.e-8, verbose=true)
 comp_model_mag = StaticNonlinearModel(res_mag, jac_mag, Uφ⁺, Vφ, Dφ; nls=nls_mag, xh=φh⁺)
 
 # Problem 2
-nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-6, rtol=1.e-2, verbose=true)
+nls_mech = NewtonRaphson(LUSolver(); maxiter=20, atol=1.e-6, rtol=1.e-2, verbose=true)
 comp_model_mech = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺)
 
 # Problem 3 
-α = CellState(1.0, dΩvacuum_mec)
-linesearch = Injectivity_Preserving_LS(α, Uu_vacuum⁺, Vu_vacuum; maxiter=50, αmin=1e-16, ρ=0.5, c=0.95)
-nls_vacmech = Newton_RaphsonSolver(LUSolver(); maxiter=10, rtol=2, verbose=true, linesearch=linesearch)
-comp_model_vacmech = StaticNonlinearModel(res_vacmech, jac_vacmech, Uu_vacuum⁺, Vu_vacuum, Du_vacuum; nls=nls_vacmech, xh=uh_vacuum⁺)
+# the vacuum mesh must not invert: the step starts from 0.95 × the exact injectivity limit at the quadrature
+# points of dΩvacuum_mec (`injectivity` in the driver) and is halved until |R·dx| drops below 0.95 |R₀·dx|
+linesearch = InjectivityLS(; β=0.95, ρ=0.5, c=0.95, maxiter=50, αmin=1e-16)
+nls_vacmech = NewtonRaphson(LUSolver(); maxiter=10, rtol=2, verbose=true, linesearch=linesearch)
+comp_model_vacmech = StaticNonlinearModel(res_vacmech, jac_vacmech, Uu_vacuum⁺, Vu_vacuum, Du_vacuum; nls=nls_vacmech, xh=uh_vacuum⁺,
+                                          injectivity=dΩvacuum_mec)
 
 # Staggered resolution:  Problem1-> Problem2-> Problem3
 comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech), (φh⁺, uh_solid⁺, uh_vacuum⁺), (φh⁻, uh_solid⁻, uh_vacuum⁻))
@@ -240,12 +238,13 @@ comp_model = StaggeredModel((comp_model_mag, comp_model_mech, comp_model_vacmech
 #               Run solver
 #******************************************************
 
-args_mag = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
-args_mech = Dict(:stepping => (nsteps=1, maxbisec=5))
-args_vacmech = Dict(:stepping => (nsteps=1, maxbisec=5), :ProjectDirichlet=>true)
+# keywords of the solve! of each model inside a pass (one load increment, up to 5 bisections)
+args_mag = (stepping=LoadStepping(nsteps=1, maxbisec=5), ProjectDirichlet=true)
+args_mech = (stepping=LoadStepping(nsteps=1, maxbisec=5),)
+args_vacmech = (stepping=LoadStepping(nsteps=1, maxbisec=5), ProjectDirichlet=true)
 args = (args_mag, args_mech, args_vacmech)
 
-solve!(comp_model; stepping=(nsteps=20, nsubsteps=2, maxbisec=1), presolver=αr_update, kargsolve=args)
+solve!(comp_model; stepping=StaggeredStepping(nsteps=20, max_substeps=2, maxbisec=1), presolver=αr_update, kargsolve=args)
 
 writevtk(Ωsolid,simdir*"/hMRE2",cellfields=["uh"=>uh_solid⁺,"-∇(φh)" => -∇(φh⁺)]) # MRE deformation
 writevtk(Ωvacuum,simdir*"/vacuum",cellfields=["uh"=>uh_vacuum⁺, "-∇(φh)" => -∇(φh⁺)]) # vacuum

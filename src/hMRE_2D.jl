@@ -9,14 +9,13 @@
 
 # Load required Packages
 using HyperFEM
-using Gridap, GridapGmsh, GridapSolvers, DrWatson
-using GridapSolvers.NonlinearSolvers
+using Gridap, GridapGmsh, DrWatson
 using Gridap.FESpaces
 
 
 function invU(F; ε=1e-12)
   F_ = get_array(F)
-  I2_ = get_array(I2)
+  I2_ = get_array(I2D)
   # Compute symmetric SPD = F'F and regularize
   S = F_' * F_
   Sreg = S + ε * I2_         # ensure SPD
@@ -96,19 +95,19 @@ Bah = interpolate_everywhere(VectorValue([0.0, -Banorm]), V_N)
 res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), Nh))))dΩsolid +
                         Λ * ∫((∂Ψmag∂F ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(v)'))dΩsolid
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⊙ (∇(du)')))dΩsolid 
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⋅² (∇(du)')))dΩsolid 
 
 # ******************************************************
 #             Computational problems
 #******************************************************
 
-nls_mech = NewtonSolver(LUSolver(); maxiter=20, atol=1.e-8, rtol=1.e-2, verbose=true)
+nls_mech = NewtonRaphson(LUSolver(); maxiter=20, atol=1.e-8, rtol=1.e-2, verbose=true)
 comp_model = StaticNonlinearModel(res_mech, jac_mech, Uu_solid⁺, Vu_solid, Du_solid; nls=nls_mech, xh=uh_solid⁺, xh⁻=uh_solid⁻)
 
 #******************************************************
 #               Run solver
 #******************************************************
 
-solve!(comp_model; stepping=(nsteps=20, maxbisec=1))
+solve!(comp_model; stepping=LoadStepping(nsteps=20, maxbisec=1))
 
 writevtk(Ωsolid, simdir * "/hMRE2", cellfields=["uh" => uh_solid⁺]) # MRE deformation
