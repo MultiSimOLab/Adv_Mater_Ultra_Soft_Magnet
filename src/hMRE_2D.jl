@@ -15,7 +15,7 @@ using Gridap.FESpaces
 
 function invU(F; ε=1e-12)
   F_ = get_array(F)
-  I2_ = get_array(I2)
+  I2_ = get_array(I2D)
   # Compute symmetric SPD = F'F and regularize
   S = F_' * F_
   Sreg = S + ε * I2_         # ensure SPD
@@ -95,7 +95,7 @@ Bah = interpolate_everywhere(VectorValue([0.0, -Banorm]), V_N)
 res_mech(Λ) = (u, v) -> ∫((∇(v)' ⊙ (∂Ψs∂F ∘ (F ∘ (∇(u)'), Nh))))dΩsolid +
                         Λ * ∫((∂Ψmag∂F ∘ (F ∘ (∇(uh_solid⁻)'), Nh, Bah)) ⊙ (∇(v)'))dΩsolid
 
-jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⊙ (∇(du)')))dΩsolid 
+jac_mech(Λ) = (u, du, v) -> ∫(∇(v)' ⊙ ((∂Ψs∂FF ∘ (F ∘ (∇(u)'), Nh)) ⋅² (∇(du)')))dΩsolid 
 
 # ******************************************************
 #             Computational problems
